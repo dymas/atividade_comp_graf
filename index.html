@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cena 3D com Three.js</title>
+  <style>
+    /* Reset e base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #f5f5f5;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* Painel de controle */
+    #controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background-color: rgba(30, 30, 40, 0.85);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      max-width: 300px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      user-select: none;
+      transition: all 0.3s ease;
+    }
+
+    /* Cabeçalhos */
+    h3 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #9cb3ff;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Grupos de controle */
+    .control-group {
+      margin-bottom: 18px;
+    }
+
+    .control-group p {
+      font-size: 14px;
+      line-height: 1.4;
+      margin-bottom: 10px;
+      color: #e0e0e0;
+    }
+
+    /* Controles de objetos */
+    .object-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .object-controls div {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Estilo dos botões */
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      flex: 1;
+      transition: all 0.2s ease;
+      background: linear-gradient(to bottom, #4a5568, #2d3748);
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      outline: none;
+    }
+
+    /* Objetos específicos com cores distintas */
+    button[id*="Cube"] {
+      border-left: 3px solid #4299e1;
+    }
+
+    button[id*="Sphere"] {
+      border-left: 3px solid #48bb78;
+    }
+
+    button[id*="Cylinder"] {
+      border-left: 3px solid #ed8936;
+    }
+
+    /* Efeitos de hover e active nos botões */
+    button:hover {
+      background: linear-gradient(to bottom, #4a5568, #3a4556);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Responsividade */
+    @media (max-width: 600px) {
+      #controls {
+        width: calc(100% - 40px);
+      }
+
+      .object-controls div {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="controls">
+    <h3>Controles da Cena</h3>
+    <div class="control-group">
+      <p>Câmera: Clique e arraste para orbitar, scroll para zoom, clique direito para mover</p>
+    </div>
+    <div class="control-group">
+      <h3>Controles de Objetos</h3>
+      <div class="object-controls">
+        <div>
+          <button id="scaleCubeUp">Aumentar Cubo</button>
+          <button id="scaleCubeDown">Diminuir Cubo</button>
+          <button id="rotateCube">Rotacionar Cubo</button>
+        </div>
+
+        <div>
+          <button id="scaleSphereUp">Aumentar Esfera</button>
+          <button id="scaleSphereDown">Diminuir Esfera</button>
+        </div>
+
+        <div>
+          <button id="scaleCylinderUp">Aumentar Cilindro</button>
+          <button id="scaleCylinderDown">Diminuir Cilindro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    let scene, camera, renderer, controls;
+    let cube, sphere, cylinder;
+    let ambientLight, directionalLight;
+
+    // Inicializa a cena, câmera, renderizador e controles
+    function init() {
+      // Cria uma nova cena do Three.js
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x333333); // Define a cor de fundo
+
+      // Configura a câmera com projeção em perspectiva
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 10; // Move a câmera para trás
+      camera.position.y = 2; // Move a câmera para cima
+
+      // Cria o renderizador WebGL e habilita o mapeamento de sombras
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      document.body.appendChild(renderer.domElement); // Adiciona o renderizador ao DOM
+
+      // Adiciona controles para interação com a câmera
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+      // Configura as luzes na cena
+      ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+
+      // Adiciona luz direcional para sombras e destaques
+      directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(5, 10, 7); // Posiciona a luz
+      directionalLight.castShadow = true; // Habilita sombras
+      directionalLight.shadow.mapSize.width = 1024; // Resolução do mapa de sombras
+      directionalLight.shadow.mapSize.height = 1024;
+      scene.add(directionalLight);
+
+      // Adiciona um auxiliar para visualizar a luz direcional
+      const lightHelper = new THREE.DirectionalLightHelper(directionalLight, 1);
+      scene.add(lightHelper);
+
+      // Cria um plano para servir como chão
+      const planeGeometry = new THREE.PlaneGeometry(20, 20);
+      const planeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xcccccc,
+        side: THREE.DoubleSide
+      });
+      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      plane.rotation.x = -Math.PI / 2; // Rotaciona para ficar plano
+      plane.position.y = -2; // Posiciona abaixo dos objetos
+      plane.receiveShadow = true; // Habilita recepção de sombras
+      scene.add(plane);
+
+      // Carrega uma textura para o cubo
+      const textureLoader = new THREE.TextureLoader();
+      const cubeTexture = textureLoader.load('https://github.com/dymas/atividade_comp_graf/blob/main/cubo.jpg?raw=true');
+
+      // Cria um cubo com a textura carregada
+      const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+      const cubeMaterial = new THREE.MeshStandardMaterial({
+        map: cubeTexture
+      });
+      cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+      cube.position.set(-4, 0, 0); // Posiciona o cubo
+      cube.castShadow = true; // Habilita projeção de sombras
+      scene.add(cube);
+
+      // Carrega uma textura para a esfera
+      const sphereTexture = textureLoader.load('https://github.com/dymas/atividade_comp_graf/blob/main/esfera.jpg?raw=true');
+
+      // Cria uma esfera com textura
+      const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+      const sphereMaterial = new THREE.MeshStandardMaterial({
+        map: sphereTexture,
+        metalness: 0.2,
+        roughness: 0.8
+      });
+      sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.position.set(0, 0, 0); // Posiciona a esfera
+      sphere.castShadow = true; // Habilita projeção de sombras
+      scene.add(sphere);
+
+      // Carrega uma textura para o cilindro
+      const cylinderTexture = textureLoader.load('https://github.com/dymas/atividade_comp_graf/blob/main/cilindro.png?raw=true');
+
+      // Cria um cilindro
+      const cylinderGeometry = new THREE.CylinderGeometry(1, 1, 3, 32);
+      const cylinderMaterial = new THREE.MeshStandardMaterial({
+        map: cylinderTexture,
+        metalness: 0.2,
+        roughness: 0.8
+      });
+      cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+      cylinder.position.set(4, 0, 0); // Posiciona o cilindro
+      cylinder.castShadow = true; // Habilita projeção de sombras
+      scene.add(cylinder);
+
+      // Adiciona um ouvinte de eventos para redimensionamento da janela
+      window.addEventListener('resize', onWindowResize, false);
+
+      // Configura eventos de clique nos botões para controle dos objetos
+      // Aumenta o cubo
+      document.getElementById('scaleCubeUp').addEventListener('click', () => {
+        cube.scale.multiplyScalar(1.2);
+      });
+
+      // Diminui o cubo
+      document.getElementById('scaleCubeDown').addEventListener('click', () => {
+        cube.scale.multiplyScalar(0.8);
+      });
+
+      // Rotaciona o cubo
+      document.getElementById('rotateCube').addEventListener('click', () => {
+        cube.rotation.x += 4;
+        cube.rotation.y += 4;
+      });
+
+      // Aumenta a esfera
+      document.getElementById('scaleSphereUp').addEventListener('click', () => {
+        sphere.scale.multiplyScalar(1.2);
+      });
+
+      // Diminui a esfera
+      document.getElementById('scaleSphereDown').addEventListener('click', () => {
+        sphere.scale.multiplyScalar(0.8);
+      });
+
+      // Aumenta o cilindro
+      document.getElementById('scaleCylinderUp').addEventListener('click', () => {
+        cylinder.scale.multiplyScalar(1.2);
+      });
+
+      // Diminui o cilindro
+      document.getElementById('scaleCylinderDown').addEventListener('click', () => {
+        cylinder.scale.multiplyScalar(0.8);
+      });
+
+      // Inicia o loop de animação
+      animate();
+    }
+
+    // Loop de animação
+    function animate() {
+      requestAnimationFrame(animate); // Solicita o próximo quadro
+
+      // Rotaciona o cubo levemente a cada quadro
+      cube.rotation.x += 0.005;
+      cube.rotation.y += 0.005;
+
+      // Rotaciona a esfera levemente a cada quadro
+      sphere.rotation.y += 0.01;
+
+      // Rotaciona o cilindro levemente a cada quadro
+      cylinder.rotation.x += 0.005;
+
+      controls.update(); // Atualiza os controles de órbita
+
+      renderer.render(scene, camera); // Renderiza a cena
+    }
+
+    // Permite redimensionar a janela
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight; // Atualiza a proporção da câmera
+      camera.updateProjectionMatrix(); // Atualiza a matriz de projeção
+      renderer.setSize(window.innerWidth, window.innerHeight); // Redimensiona o renderizador
+    }
+
+    // Inicializa a cena
+    init();
+  </script>
+</body>
+
+</html>
