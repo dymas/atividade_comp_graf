@@ -216,8 +216,8 @@
 
       // Carrega uma textura para o cubo
       const textureLoader = new THREE.TextureLoader();
-      textureLoader.setCrossOrigin('anonymous'); // Permite carregar texturas de outros domínios
-      const cubeTexture = textureLoader.load('https://github.com/dymas/atividade_comp_graf/blob/main/cubo.jpg?raw=true');
+      textureLoader.crossOrigin = null; // Permite carregar texturas de outros domínios
+      const cubeTexture = textureLoader.load('/cubo.jpg');
 
       // Cria um cubo com a textura carregada
       const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
@@ -230,7 +230,7 @@
       scene.add(cube);
 
       // Carrega uma textura para a esfera
-      const sphereTexture = textureLoader.load('https://github.com/dymas/atividade_comp_graf/blob/main/esfera.jpg?raw=true');
+      const sphereTexture = textureLoader.load('/esfera.jpg');
 
       // Cria uma esfera com textura
       const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
@@ -245,7 +245,7 @@
       scene.add(sphere);
 
       // Carrega uma textura para o cilindro
-      const cylinderTexture = textureLoader.load('https://github.com/dymas/atividade_comp_graf/blob/main/cilindro.png?raw=true');
+      const cylinderTexture = textureLoader.load('/cilindro.png');
 
       // Cria um cilindro
       const cylinderGeometry = new THREE.CylinderGeometry(1, 1, 3, 32);
