@@ -216,6 +216,7 @@
 
       // Carrega uma textura para o cubo
       const textureLoader = new THREE.TextureLoader();
+      textureLoader.setCrossOrigin('anonymous'); // Permite carregar texturas de outros domínios
       const cubeTexture = textureLoader.load('https://github.com/dymas/atividade_comp_graf/blob/main/cubo.jpg?raw=true');
 
       // Cria um cubo com a textura carregada
